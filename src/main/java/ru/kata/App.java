@@ -15,13 +15,14 @@ public class App {
     private static final String UPDATE_USER_ENDPOINT_URL = "http://94.198.50.185:7081/api/users";
     private static final String DELETE_USER_ENDPOINT_URL = "http://94.198.50.185:7081/api/users/{id}";
     private static RestTemplate restTemplate;
-    private static String session;
+    private static HttpHeaders httpHeaders;
     private static String resultBody;
 
     public static void main(String[] args) {
         AnnotationConfigApplicationContext context =
                 new AnnotationConfigApplicationContext(MyConfig.class);
         restTemplate = context.getBean("getRestTemplate", RestTemplate.class);
+        httpHeaders = context.getBean("httpHeaders", HttpHeaders.class);
         getUsers();
         createUser();
         updateUser();
@@ -30,39 +31,24 @@ public class App {
     }
 
     private static void getUsers() {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
-        HttpEntity<String> entity = new HttpEntity<>(headers);
-        ResponseEntity<String> response = restTemplate.exchange(GET_USERS_ENDPOINT_URL, HttpMethod.GET, entity, String.class);
-        session = response.getHeaders().getFirst(HttpHeaders.SET_COOKIE);
+        ResponseEntity<String> response = restTemplate.exchange(GET_USERS_ENDPOINT_URL, HttpMethod.GET, new HttpEntity<>(httpHeaders), String.class);
+        httpHeaders.add("Cookie", response.getHeaders().getFirst(HttpHeaders.SET_COOKIE));
     }
 
     private static void createUser() {
         User user = new User(3L, "James", "Brown", (byte) 10);
-        HttpHeaders headers = new HttpHeaders();
-        headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
-        headers.add("Cookie", session);
-        HttpEntity<User> entity = new HttpEntity<>(user, headers);
-        resultBody = restTemplate.exchange(CREATE_USER_ENDPOINT_URL, HttpMethod.POST, entity, String.class).getBody();
+        resultBody = restTemplate.exchange(CREATE_USER_ENDPOINT_URL, HttpMethod.POST, new HttpEntity<>(user, httpHeaders), String.class).getBody();
         System.out.println("1 part of result = " + resultBody);
     }
 
     private static void updateUser() {
         User updatedUser = new User(3L, "Thomas", "Shelby", (byte) 10);
-        HttpHeaders headers = new HttpHeaders();
-        headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
-        headers.add("Cookie", session);
-        HttpEntity<User> entity = new HttpEntity<>(updatedUser, headers);
-        resultBody += restTemplate.exchange(UPDATE_USER_ENDPOINT_URL, HttpMethod.PUT, entity, String.class).getBody();
+        resultBody += restTemplate.exchange(UPDATE_USER_ENDPOINT_URL, HttpMethod.PUT, new HttpEntity<>(updatedUser, httpHeaders), String.class).getBody();
         System.out.println("1 and 2 parts of result = " + resultBody);
     }
 
     private static void deleteUser() {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
-        headers.add("Cookie", session);
-        HttpEntity<User> entity = new HttpEntity<>(headers);
-        resultBody += restTemplate.exchange(DELETE_USER_ENDPOINT_URL.replace("{id}", "3"), HttpMethod.DELETE, entity, String.class).getBody();
+        resultBody += restTemplate.exchange(DELETE_USER_ENDPOINT_URL.replace("{id}", "3"), HttpMethod.DELETE, new HttpEntity<>(httpHeaders), String.class).getBody();
         System.out.println("Full result = " + resultBody);
     }
 }
